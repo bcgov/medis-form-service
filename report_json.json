@@ -1,7 +1,7 @@
 {
 	"@programName": "OWASP ZAP",
 	"@version": "2.12.0",
-	"@generated": "Sat, 1 Apr 2023 01:12:05",
+	"@generated": "Thu, 13 Apr 2023 23:40:59",
 	"site":[ 
 		{
 			"@name": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca",
@@ -24,28 +24,32 @@
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
-							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-9",
+							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-11",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/robots.txt",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/sitemap.xml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						}
 					],
 					"count": "4",
@@ -71,28 +75,32 @@
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
-							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-9",
+							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-11",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/robots.txt",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/sitemap.xml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						}
 					],
 					"count": "4",
@@ -118,28 +126,32 @@
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
-							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-9",
+							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-11",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/robots.txt",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/sitemap.xml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": ""
+							"evidence": "",
+							"otherinfo": ""
 						}
 					],
 					"count": "4",
@@ -165,28 +177,32 @@
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "no-store"
+							"evidence": "no-store",
+							"otherinfo": ""
 						},
 						{
-							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-9",
+							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-11",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "no-store"
+							"evidence": "no-store",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/robots.txt",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "no-store"
+							"evidence": "no-store",
+							"otherinfo": ""
 						},
 						{
 							"uri": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/sitemap.xml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "no-store"
+							"evidence": "no-store",
+							"otherinfo": ""
 						}
 					],
 					"count": "4",
