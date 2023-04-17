@@ -1,7 +1,7 @@
 {
 	"@programName": "OWASP ZAP",
 	"@version": "2.12.0",
-	"@generated": "Mon, 17 Apr 2023 20:10:24",
+	"@generated": "Mon, 17 Apr 2023 20:16:35",
 	"site":[ 
 		{
 			"@name": "https://medis-chefs-dev.apps.silver.devops.gov.bc.ca",
@@ -147,7 +147,7 @@
 					"reference": "<p>https://tools.ietf.org/html/rfc7231#section-5.1.2</p>",
 					"cweid": "200",
 					"wascid": "45",
-					"sourceid": "418"
+					"sourceid": "420"
 				},
 				{
 					"pluginid": "10054",
@@ -373,7 +373,7 @@
 					"reference": "<p>http://projects.webappsec.org/Fingerprinting</p><p></p>",
 					"cweid": "200",
 					"wascid": "45",
-					"sourceid": "509"
+					"sourceid": "512"
 				},
 				{
 					"pluginid": "10109",
@@ -620,7 +620,7 @@
 					"reference": "<p>https://owasp.org/wstg</p>",
 					"cweid": "0",
 					"wascid": "0",
-					"sourceid": "179"
+					"sourceid": "178"
 				}
 			]
 		}
