@@ -44,7 +44,7 @@ Content Security Policy (CSP) is an added layer of security that helps to detect
   * Parameter: ``
   * Attack: ``
   * Evidence: ``
-* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-13
+* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-14
   * Method: `GET`
   * Parameter: ``
   * Attack: ``
@@ -100,7 +100,7 @@ Permissions Policy Header is an added layer of security that helps to restrict f
   * Parameter: ``
   * Attack: ``
   * Evidence: ``
-* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-13
+* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-14
   * Method: `GET`
   * Parameter: ``
   * Attack: ``
@@ -154,7 +154,7 @@ HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby
   * Parameter: ``
   * Attack: ``
   * Evidence: ``
-* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-13
+* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-14
   * Method: `GET`
   * Parameter: ``
   * Attack: ``
@@ -208,7 +208,7 @@ The response contents are not storable by caching components such as proxy serve
   * Parameter: ``
   * Attack: ``
   * Evidence: `no-store`
-* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-13
+* URL: https://medis-chefs-dev.apps.silver.devops.gov.bc.ca/pr-14
   * Method: `GET`
   * Parameter: ``
   * Attack: ``
