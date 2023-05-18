@@ -6,13 +6,9 @@ import axios from 'axios';
  * @param {integer} [timeout=10000] Number of milliseconds before timing out the request
  * @returns {object} An axios instance
  */
-export function appAxios(timeout = 10000) {
+export function appAxios(timeout = 10000, baseURL) {
   const axiosOptions = { timeout: timeout };
-  if (Vue.prototype.$config) {
-    const config = Vue.prototype.$config;
-    axiosOptions.baseURL = `${config.basePath}/${config.apiPath}`;
-  }
-
+  axiosOptions.baseURL = baseURL;
   const instance = axios.create(axiosOptions);
   // instance.interceptors.request.use();
   return instance;
