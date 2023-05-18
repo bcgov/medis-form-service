@@ -2,6 +2,11 @@ const Problem = require('api-problem');
 const { ref } = require('objection');
 const { v4: uuidv4 } = require('uuid');
 const { validateScheduleObject } = require('../common/utils');
+const Redis = require('ioredis');
+
+const REDIS_KEY = {
+  PRE_SUB: 'pre_submissions',
+};
 
 const {
   FileStorage,
@@ -407,75 +412,94 @@ const service = {
     }
   },
   createMultiSubmission: async (formVersionId, data, currentUser) => {
-    let trx;
+    // eslint-disable-next-line no-useless-catch
     try {
-      const formVersion = await service.readVersion(formVersionId);
-      const { identityProviders } = await service.readForm(formVersion.formId);
-
-      trx = await FormSubmission.startTransaction();
-
-      // Ensure we only record the user if the form is not public facing
-      const isPublicForm = identityProviders.some((idp) => idp.code === 'public');
-      const createdBy = isPublicForm ? 'public' : currentUser.usernameIdp;
-
-      const submissionDataArray = data.submission.data;
-      const recordWithoutData = data;
-      delete recordWithoutData.submission.data;
-
-      let recordsToInsert = [];
-      let submissionId;
-      // let's create multiple submissions with same metadata
-      submissionDataArray.map((singleData) => {
-        submissionId = uuidv4();
-        recordsToInsert.push({
-          ...recordWithoutData,
-          id: submissionId,
-          formVersionId: formVersion.id,
-          confirmationId: submissionId.substring(0, 8).toUpperCase(),
-          createdBy: createdBy,
-          submission: {
-            ...recordWithoutData.submission,
-            data: singleData,
-          },
-        });
-      });
-
-      const result = await FormSubmission.query(trx).insert(recordsToInsert);
-
-      if (!isPublicForm && !currentUser.public) {
-        // Provide the submission creator appropriate CRUD permissions if this is a non-public form
-        // we decided that subitter cannot delete or update their own submission unless it's a draft
-        // We know this is the submission creator when we see the SUBMISSION_CREATE permission
-        // These are adjusted at the update point if going from draft to submitted, or when adding
-        // team submitters to a draft
-
-        const perms = [Permissions.SUBMISSION_CREATE, Permissions.SUBMISSION_READ];
-        if (data.draft) {
-          perms.push(Permissions.SUBMISSION_DELETE, Permissions.SUBMISSION_UPDATE);
-        }
-        let itemsToInsert = [];
-        result.map((singleSubmission) => {
-          itemsToInsert.push(
-            ...perms.map((perm) => ({
-              id: uuidv4(),
-              userId: currentUser.id,
-              formSubmissionId: singleSubmission.id,
-              permission: perm,
-              createdBy: createdBy,
-            }))
-          );
-        });
-
-        await FormSubmissionUser.query(trx).insert(itemsToInsert);
+      const redis = new Redis();
+      const schema = await redis.get(formVersionId);
+      console.log(schema);
+      if (schema == undefined || schema != '') {
+        const formVersion = await service.readVersion(formVersionId);
+        await redis.set(formVersionId, JSON.stringify(formVersion.schema));
       }
-
-      await trx.commit();
-      return result;
+      const payload = { formVersionId: formVersionId, data: data, currentUser: currentUser };
+      const r =  await redis.lpush(REDIS_KEY.PRE_SUB, JSON.stringify(payload));
+      console.log(r);
+      redis.quit();
+      return {};
     } catch (err) {
-      if (trx) await trx.rollback();
       throw err;
     }
   },
+  // createMultiSubmission: async (formVersionId, data, currentUser) => {
+  //   let trx;
+  //   try {
+  //     const formVersion = await service.readVersion(formVersionId);
+  //     const { identityProviders } = await service.readForm(formVersion.formId);
+
+  //     trx = await FormSubmission.startTransaction();
+
+  //     // Ensure we only record the user if the form is not public facing
+  //     const isPublicForm = identityProviders.some((idp) => idp.code === 'public');
+  //     const createdBy = isPublicForm ? 'public' : currentUser.usernameIdp;
+
+  //     const submissionDataArray = data.submission.data;
+  //     const recordWithoutData = data;
+  //     delete recordWithoutData.submission.data;
+
+  //     let recordsToInsert = [];
+  //     let submissionId;
+  //     // let's create multiple submissions with same metadata
+  //     submissionDataArray.map((singleData) => {
+  //       submissionId = uuidv4();
+  //       recordsToInsert.push({
+  //         ...recordWithoutData,
+  //         id: submissionId,
+  //         formVersionId: formVersion.id,
+  //         confirmationId: submissionId.substring(0, 8).toUpperCase(),
+  //         createdBy: createdBy,
+  //         submission: {
+  //           ...recordWithoutData.submission,
+  //           data: singleData,
+  //         },
+  //       });
+  //     });
+
+  //     const result = await FormSubmission.query(trx).insert(recordsToInsert);
+
+  //     if (!isPublicForm && !currentUser.public) {
+  //       // Provide the submission creator appropriate CRUD permissions if this is a non-public form
+  //       // we decided that subitter cannot delete or update their own submission unless it's a draft
+  //       // We know this is the submission creator when we see the SUBMISSION_CREATE permission
+  //       // These are adjusted at the update point if going from draft to submitted, or when adding
+  //       // team submitters to a draft
+
+  //       const perms = [Permissions.SUBMISSION_CREATE, Permissions.SUBMISSION_READ];
+  //       if (data.draft) {
+  //         perms.push(Permissions.SUBMISSION_DELETE, Permissions.SUBMISSION_UPDATE);
+  //       }
+  //       let itemsToInsert = [];
+  //       result.map((singleSubmission) => {
+  //         itemsToInsert.push(
+  //           ...perms.map((perm) => ({
+  //             id: uuidv4(),
+  //             userId: currentUser.id,
+  //             formSubmissionId: singleSubmission.id,
+  //             permission: perm,
+  //             createdBy: createdBy,
+  //           }))
+  //         );
+  //       });
+
+  //       await FormSubmissionUser.query(trx).insert(itemsToInsert);
+  //     }
+
+  //     await trx.commit();
+  //     return result;
+  //   } catch (err) {
+  //     if (trx) await trx.rollback();
+  //     throw err;
+  //   }
+  // },
   listSubmissionFields: (formVersionId, fields) => {
     return FormSubmission.query()
       .select(
