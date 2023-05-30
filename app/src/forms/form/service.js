@@ -3,6 +3,7 @@ const { ref } = require('objection');
 const { v4: uuidv4 } = require('uuid');
 const { validateScheduleObject } = require('../common/utils');
 const Redis = require('ioredis');
+const config = require('config');
 
 const REDIS_KEY = {
   PRE_SUB: 'pre_submissions',
@@ -411,19 +412,27 @@ const service = {
       throw err;
     }
   },
-  createMultiSubmission: async (formVersionId, data, currentUser) => {
+  createMultiSubmission: async (formVersionId, data, currentUser, host) => {
     // eslint-disable-next-line no-useless-catch
     try {
       const redis = new Redis();
       const schema = await redis.get(formVersionId);
-      console.log(schema);
       if (schema == undefined || schema != '') {
         const formVersion = await service.readVersion(formVersionId);
         await redis.set(formVersionId, JSON.stringify(formVersion.schema));
       }
-      const payload = { formVersionId: formVersionId, data: data, currentUser: currentUser };
-      const r =  await redis.lpush(REDIS_KEY.PRE_SUB, JSON.stringify(payload));
-      console.log(r);
+      const basePath = config.get('server.basePath');
+      const apiPath = config.get('server.apiPath');
+      const protocol = 'http://';
+      const url = `${protocol}${host}${basePath}${apiPath}/public`;
+      const token = uuidv4();
+      const currentTimestamp = Date.now().toString().replace(/\s/g, '');
+      const token_key = `${formVersionId}.${currentUser.id}.${currentTimestamp}`;
+      await redis.set(token_key, token);
+      //console.log(url);
+      const user = { id: currentUser.id, email: currentUser.email, public: currentUser.public, usernameIdp: currentUser.usernameIdp };
+      const payload = { formVersionId: formVersionId, data: data, currentUser: user, url, token, token_key };
+      await redis.lpush(REDIS_KEY.PRE_SUB, JSON.stringify(payload));
       redis.quit();
       return {};
     } catch (err) {

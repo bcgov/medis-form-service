@@ -138,7 +138,7 @@ module.exports = {
   },
   createMultiSubmission: async (req, res, next) => {
     try {
-      const response = await service.createMultiSubmission(req.params.formVersionId, req.body, req.currentUser);
+      const response = await service.createMultiSubmission(req.params.formVersionId, req.body, req.currentUser, req.headers.host);
       res.status(201).json(response);
     } catch (error) {
       next(error);

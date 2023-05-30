@@ -26,6 +26,7 @@ const service = {
         await service.sleep(10000);
         continue;
       }
+      console.log('One submission found ');
       try {
         const data = service.getJson(pre_submissions);
         let schema = await redis.get(data.formVersionId);
@@ -36,13 +37,13 @@ const service = {
           continue;
         }
         if (!data) continue;
+        console.log('Submission ready to validate ');
         service.validate(data, redis, schema);
       } catch (e) {
-        console.log(e);
         await service.sleep(10000);
-        service._init();
         continue;
       }
+
       await service.sleep(10000);
     }
   },
@@ -55,45 +56,59 @@ const service = {
     }
   },
   validate: async (obj, redis, schema) => {
-    const submissions = obj.data.submission.data;
-    let validationResults = [];
-    let successData = [];
-    let errorData = [];
-    let index = 0;
-    let error = false;
-    await Promise.all(
-      submissions.map(async (singleData) => {
-        const report = await validationService.validate(singleData, schema);
-        if (report !== null) {
-          validationResults[index] = report;
-          errorData[index] = singleData;
-          index++;
-          error = true;
-        } else {
-          successData.push(singleData);
-        }
-      })
-    );
-    let info = {
-      formVersionId: obj.formVersionId,
-      currentUser: obj.currentUser,
-      successData,
-      errorData,
-      validationResults,
-      error,
-    };
-    service.finalize(info, redis);
+    try {
+      const submissions = obj.data.submission.data;
+      let validationResults = [];
+      let successData = [];
+      let errorData = [];
+      let index = 0;
+      let error = false;
+      console.log('Validation start');
+      await Promise.all(
+        submissions.map(async (singleData) => {
+          const report = await validationService.validate(singleData, schema);
+          if (report !== null) {
+            validationResults[index] = report;
+            errorData[index] = singleData;
+            index++;
+            error = true;
+          } else {
+            successData.push(singleData);
+          }
+        })
+      );
+      console.log('Validation over');
+      let info = {
+        formVersionId: obj.formVersionId,
+        currentUser: obj.currentUser,
+        successData,
+        errorData,
+        validationResults,
+        error,
+        token: obj.token,
+        token_key: obj.token_key,
+      };
+      service.finalize(info, redis, obj.url);
+    } catch (err) {
+      service.crash(obj.url, err);
+    }
   },
-  finalize: async (info, redis) => {
+  finalize: async (info, redis, url) => {
+    console.log('store validation results to redis');
     await redis.rpush(REDIS_KEY.FINAL_SUB, JSON.stringify(info));
-    service.populate(redis);
+    service.populate(redis, url);
   },
-  populate: (redis) => {
+  populate: (redis, url) => {
     setTimeout(async () => {
       let submissions = await redis.lpop(REDIS_KEY.FINAL_SUB);
       submissions = service.getJson(submissions);
-      SubmissionService.sendData(submissions);
-    }, 30000);
+      SubmissionService.init(submissions, url);
+    }, 1000);
+  },
+  crash: (url, data) => {
+    setTimeout(async () => {
+      SubmissionService.crash(data, url);
+    }, 1000);
   },
 };
 module.exports = service;

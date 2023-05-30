@@ -12,6 +12,9 @@ module.exports = Object.freeze({
     REMINDER_FORM_OPEN: 'formOpen',
     REMINDER_FORM_WILL_CLOSE: 'formWillClose',
     REMINDER_FORM_NOT_FILL: 'formNotFill',
+    MULTI_SUB_SUCCESS: 'MultiSubSuccess',
+    MULTI_SUB_FAILED: 'MultiSubFailed',
+    MULTI_SUB_CRASH: 'MultiSubCrash',
   },
   Permissions: {
     FORM_API_CREATE: 'form_api_create',

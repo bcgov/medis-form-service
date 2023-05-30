@@ -179,6 +179,75 @@ const buildEmailTemplateFormForReminder = async (form, emailType, users, report,
   };
 };
 
+/** Helper function used to build the email template based on email type and contents for reminder */
+const buildEmailTemplateFormForValidation = async (form, emailType, user, obj) => {
+  let configData = {};
+  const subject = 'CHEFS form validate';
+  const greeting = `Hi, ${user.fullName} \n`;
+  const contextToVal = [user];
+  const attachments = [];
+  if (emailType === EmailTypes.MULTI_SUB_SUCCESS) {
+    const message = ``;
+    configData = {
+      bodyTemplate: 'reminder-form-open.html',
+      title: `Validation success`,
+      subject: subject,
+      messageLinkText: `${greeting}${message}
+      `,
+      priority: 'normal',
+      form,
+    };
+  } else if (emailType === EmailTypes.MULTI_SUB_FAILED) {
+    const message = `The multi submission identifier at : ${obj.multiSubmissionId} for the form ${form.name} has been failed`;
+    configData = {
+      bodyTemplate: 'reminder-form-not-fill.html',
+      title: `Validation failed`,
+      subject: subject,
+      messageLinkText: `${message}`,
+      priority: 'normal',
+      form,
+    };
+  } else if (emailType === EmailTypes.MULTI_SUB_CRASH) {
+    const message = `The multi submission identifier at : ${obj.multiSubmissionId} for the form ${form.name} has been crashed`;
+    configData = {
+      bodyTemplate: 'reminder-form-will-close.html',
+      title: `Validation crashed`,
+      subject: subject,
+      messageLinkText: `${message}`,
+      priority: 'normal',
+      form,
+    };
+  } else if (emailType === EmailTypes.MULTI_SUB_REGISTER) {
+    const message = `Your multi submission has been successfully registered for the form ${form.name}, the id of this submission is: ${obj.multiSubmissionId}.`;
+    configData = {
+      bodyTemplate: 'reminder-form-will-close.html',
+      title: `Form multi submission save`,
+      subject: subject,
+      messageLinkText: `${message}`,
+      priority: 'normal',
+      form,
+    };
+  }
+
+  return {
+    attachments,
+    configData,
+    contexts: [
+      {
+        context: {
+          allFormSubmissionUrl: '',
+          form: configData.form,
+          report: '',
+          messageLinkText: configData.messageLinkText,
+          messageLinkUrl: ``,
+          title: configData.title,
+        },
+        to: contextToVal,
+      },
+    ],
+  };
+};
+
 const service = {
   /**
    * @function _appUrl
@@ -226,6 +295,27 @@ const service = {
     try {
       const mergedHtml = service._mergeEmailTemplate(configData.bodyTemplate);
       const data = {
+        body: mergedHtml,
+        bodyType: 'html',
+        contexts: contexts,
+        from: EmailProperties.FROM_EMAIL,
+        subject: configData.subject,
+        title: configData.title,
+        priority: configData.priority,
+        messageLinkText: configData.messageLinkText,
+      };
+      return chesService.merge(data);
+    } catch (err) {
+      log.error(err.message, { function: '_sendEmailTemplate' });
+      throw err;
+    }
+  },
+
+  _sendEmailTemplateWithFileAttachment: (configData, contexts, attachments) => {
+    try {
+      const mergedHtml = service._mergeEmailTemplate(configData.bodyTemplate);
+      const data = {
+        attachments: attachments,
         body: mergedHtml,
         bodyType: 'html',
         contexts: contexts,
@@ -422,7 +512,7 @@ const service = {
     }
   },
   /**
-   * @function formOpen
+   * @function initReminder
    * Manual email confirmation after form has been submitted
    * @param {object} information about the submitter and the form
    * @returns The result of the email merge operation
@@ -435,6 +525,26 @@ const service = {
       log.error(e.message, {
         function: obj.state,
         formId: obj.form.id,
+      });
+      throw e;
+    }
+  },
+  /**
+   * @function initValidationMail
+   * Manual email confirmation after form has been submitted
+   * @param {object} information about the submitter and the form
+   * @returns The result of the email merge operation
+   */
+  initValidationMail: async (form, user, typeMail, obj) => {
+    try {
+      const { configData, contexts, attachments } = await buildEmailTemplateFormForValidation(form, typeMail, user, obj);
+      return typeMail === EmailTypes.MULTI_SUB_SUCCESS
+        ? service._sendEmailTemplateWithFileAttachment(configData, contexts, attachments)
+        : service._sendEmailTemplate(configData, contexts);
+    } catch (e) {
+      log.error(e.message, {
+        function: typeMail,
+        formId: form.id,
       });
       throw e;
     }
