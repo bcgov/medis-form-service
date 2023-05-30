@@ -15,6 +15,7 @@ module.exports = Object.freeze({
     MULTI_SUB_SUCCESS: 'MultiSubSuccess',
     MULTI_SUB_FAILED: 'MultiSubFailed',
     MULTI_SUB_CRASH: 'MultiSubCrash',
+    MULTI_SUB_REGISTER: 'MultiSubRegister',
   },
   Permissions: {
     FORM_API_CREATE: 'form_api_create',
