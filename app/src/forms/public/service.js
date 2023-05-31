@@ -94,11 +94,11 @@ const service = {
         await trx.commit();
         return results;
       } else {
-        throw new Problem(401, `This operation is not allowed to public.`);
+        service.multiSubmissionCrash({});
       }
     } catch (err) {
       if (trx) await trx.rollback();
-      throw err;
+      console.log(err);
     }
   },
   multiSubmissionFailed: async (data) => {

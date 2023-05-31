@@ -3,26 +3,32 @@ const service = {
   init: (data, url) => {
     const payload = { results: data.successData, token: data.token, token_key: data.token_key, formVersionId: data.formVersionId, currentUser: data.currentUser, draft: true };
     if (data.error) {
+      console.log('Validation failed ');
       service.failed(payload, url);
     } else {
+      console.log('Validation success ');
       service.success(payload, url);
     }
   },
   success: (data, url) => {
     try {
-      service.appAxios(60).post(`${url}/multiSubmission/success`, data);
+      service.appAxios(120).post(`${url}/multiSubmission/success`, data);
     } catch (error) {
-      service.crash({ message: error }, url);
+      // service.crash({ message: error }, url);
     }
   },
   failed: (data, url) => {
-    service.appAxios(30).post(`${url}/multiSubmission/failed`, data);
+    try {
+      service.appAxios(30).post(`${url}/multiSubmission/failed`, data);
+    } catch (error) {
+      // service.crash({ message: error }, url);
+    }
   },
   crash: (data, url) => {
     try {
       service.appAxios().post(`${url}/multiSubmission/crash`, data);
     } catch (error) {
-      console.log(error);
+      // console.log(error);
     }
   },
 

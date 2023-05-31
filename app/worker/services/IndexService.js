@@ -1,12 +1,8 @@
 /* eslint-disable no-unused-vars */
-const Redis = require('ioredis');
+const { redis, REDIS_KEY } = require('./redis');
 const validationService = require('./ValidationService');
 const SubmissionService = require('./SubmissionService');
-
-const REDIS_KEY = {
-  PRE_SUB: 'pre_submissions',
-  FINAL_SUB: 'final_submissions',
-};
+const WAIT_TIMES = [10000, 10];
 
 const service = {
   sleep: (ms) => {
@@ -19,11 +15,10 @@ const service = {
     // const lpopAsync = promisify(redis.lpop).bind(redis);
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const redis = new Redis();
       const pre_submissions = await redis.lpop(REDIS_KEY.PRE_SUB);
       if (pre_submissions == undefined || pre_submissions == '') {
         console.log('No submission found');
-        await service.sleep(10000);
+        await service.sleep(WAIT_TIMES[0]);
         continue;
       }
       console.log('One submission found ');
@@ -33,18 +28,18 @@ const service = {
         schema = service.getJson(schema);
         if (schema == undefined || schema == '') {
           console.log('No schema form found for those submissions ');
-          await service.sleep(10000);
+          await service.sleep(WAIT_TIMES[0]);
           continue;
         }
         if (!data) continue;
         console.log('Submission ready to validate ');
-        service.validate(data, redis, schema);
+        service.validate(data, schema);
       } catch (e) {
-        await service.sleep(10000);
+        await service.sleep(WAIT_TIMES[0]);
         continue;
       }
 
-      await service.sleep(10000);
+      await service.sleep(WAIT_TIMES[0]);
     }
   },
   getJson: (data) => {
@@ -55,7 +50,7 @@ const service = {
       return false;
     }
   },
-  validate: async (obj, redis, schema) => {
+  validate: async (obj, schema) => {
     try {
       const submissions = obj.data.submission.data;
       let validationResults = [];
@@ -88,27 +83,27 @@ const service = {
         token: obj.token,
         token_key: obj.token_key,
       };
-      service.finalize(info, redis, obj.url);
+      service.finalize(info, obj.url);
     } catch (err) {
       service.crash(obj.url, err);
     }
   },
-  finalize: async (info, redis, url) => {
-    console.log('store validation results to redis');
+  finalize: async (info, url) => {
+    console.log('Store validation results to redis');
     await redis.rpush(REDIS_KEY.FINAL_SUB, JSON.stringify(info));
-    service.populate(redis, url);
+    service.populate(url);
   },
-  populate: (redis, url) => {
+  populate: (url) => {
     setTimeout(async () => {
       let submissions = await redis.lpop(REDIS_KEY.FINAL_SUB);
       submissions = service.getJson(submissions);
       SubmissionService.init(submissions, url);
-    }, 1000);
+    }, WAIT_TIMES[1]);
   },
   crash: (url, data) => {
     setTimeout(async () => {
       SubmissionService.crash(data, url);
-    }, 1000);
+    }, WAIT_TIMES[1]);
   },
 };
 module.exports = service;
