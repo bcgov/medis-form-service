@@ -6,6 +6,7 @@ const formService = require('../form/service');
 const validationMailService = require('../email/validationMailService');
 const { Permissions } = require('../common/constants');
 const { EmailTypes } = require('../common/constants');
+
 const service = {
   sendReminderToSubmitter: async () => {
     return await reminderService._init();
@@ -17,6 +18,7 @@ const service = {
       const formVersion = await formService.readVersion(data.formVersionId);
 
       const { identityProviders, enableSubmitterDraft, allowSubmitterToUploadFile, name, id } = await formService.readForm(formVersion.formId);
+      console.log(name, id);
 
       if (!enableSubmitterDraft) throw new Problem(401, `This form is not allowed to save draft.`);
 
@@ -82,6 +84,7 @@ const service = {
         //   }))
         // );
         // });
+
         const form = Object({
           id,
           name,
@@ -90,6 +93,7 @@ const service = {
           multiSubmissionId: data.token,
         });
         validationMailService._init(form, data.currentUser, EmailTypes.MULTI_SUB_SUCCESS, obj);
+
         await FormSubmissionUser.query(trx).insert(itemsToInsert);
         await trx.commit();
         return results;
@@ -102,10 +106,33 @@ const service = {
     }
   },
   multiSubmissionFailed: async (data) => {
-    console.log(data);
+    const formVersion = await formService.readVersion(data.formVersionId);
+
+    const { name, id } = await formService.readForm(formVersion.formId);
+
+    const form = Object({
+      id,
+      name,
+    });
+    const obj = Object({
+      json: data.validationResults,
+      multiSubmissionId: data.token,
+    });
+    validationMailService._init(form, data.currentUser, EmailTypes.MULTI_SUB_FAILED, obj);
   },
   multiSubmissionCrash: async (data) => {
-    console.log(data);
+    const formVersion = await formService.readVersion(data.formVersionId);
+
+    const { name, id } = await formService.readForm(formVersion.formId);
+
+    const form = Object({
+      id,
+      name,
+    });
+    const obj = Object({
+      multiSubmissionId: data.token,
+    });
+    validationMailService._init(form, data.currentUser, EmailTypes.MULTI_SUB_CRASH, obj);
   },
 };
 

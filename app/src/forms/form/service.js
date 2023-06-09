@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const { validateScheduleObject } = require('../common/utils');
 const Redis = require('ioredis');
 const config = require('config');
+const validationMailService = require('../email/validationMailService');
+const { EmailTypes } = require('../common/constants');
 
 const REDIS_KEY = {
   PRE_SUB: 'pre_submissions',
@@ -417,8 +419,8 @@ const service = {
     try {
       const redis = new Redis();
       const schema = await redis.get(formVersionId);
+      const formVersion = await service.readVersion(formVersionId);
       if (schema == undefined || schema != '') {
-        const formVersion = await service.readVersion(formVersionId);
         await redis.set(formVersionId, JSON.stringify(formVersion.schema));
       }
       const basePath = config.get('server.basePath');
@@ -429,11 +431,19 @@ const service = {
       const currentTimestamp = Date.now().toString().replace(/\s/g, '');
       const token_key = `${formVersionId}.${currentUser.id}.${currentTimestamp}`;
       await redis.set(token_key, token);
-      //console.log(url);
       const user = { id: currentUser.id, email: currentUser.email, public: currentUser.public, usernameIdp: currentUser.usernameIdp };
       const payload = { formVersionId: formVersionId, data: data, currentUser: user, url, token, token_key };
       await redis.lpush(REDIS_KEY.PRE_SUB, JSON.stringify(payload));
       redis.quit();
+      const { name, id } = await service.readForm(formVersion.formId);
+      const form = Object({
+        id,
+        name,
+      });
+      const obj = Object({
+        multiSubmissionId: token,
+      });
+      validationMailService._init(form, currentUser, EmailTypes.MULTI_SUB_REGISTER, obj);
       return {};
     } catch (err) {
       throw err;

@@ -24,6 +24,7 @@
     </v-row>
     <v-row>
       <h3>{{ form.name }}</h3>
+
       <div
         v-if="!file"
         class="drop-zone"
@@ -35,14 +36,18 @@
         <v-icon class="mr-1" color="#003366">upload</v-icon>
         <h1>Select JSON file to upload</h1>
         <p>or drag and drop it here</p>
-        <input
+
+        <v-file-input
           class="drop-zone__input"
           ref="file"
           accept=".json"
           type="file"
           @change="addFile($event, 1)"
           name="file"
-        />
+          label="Choose a file"
+          show-size
+        >
+        </v-file-input>
       </div>
       <div v-if="file" class="worker-zone">
         <div class="wz-top">
@@ -118,10 +123,12 @@
         </v-row>
       </div>
     </v-row>
+    <v-row id="validateForm" class="displayNone"></v-row>
   </div>
 </template>
 <script>
 import { mapActions } from 'vuex';
+import { Formio } from 'vue-formio';
 export default {
   name: 'FormViewerDownloadButton',
   components: {},
@@ -137,6 +144,7 @@ export default {
       upload_state: Number,
       response: [],
       file_name: String,
+      typeError: Number,
     },
     json_csv: {
       data: [],
@@ -199,37 +207,47 @@ export default {
         });
         return;
       }
-      let droppedFiles = type == 0 ? e.dataTransfer.files : e.target.files;
-      if (!droppedFiles || droppedFiles == undefined) return;
+      try {
+        let droppedFiles = type == 0 ? e.dataTransfer.files : [e];
 
-      if (droppedFiles.length > 1) {
+        if (!droppedFiles || droppedFiles == undefined) return;
+
+        if (droppedFiles.length > 1) {
+          this.addNotification({
+            message: this.ERROR.DRAG_MULPLE_FILE_ERROR,
+            consoleError: this.ERROR.DRAG_MULPLE_FILE_ERROR,
+          });
+          return;
+        }
+
+        if (droppedFiles[0]['type'] != 'application/json') {
+          this.addNotification({
+            message: this.ERROR.FILE_FORMAT_ERROR,
+            consoleError: this.ERROR.FILE_FORMAT_ERROR,
+          });
+          return;
+        }
+        let size = droppedFiles[0].size / (1024 * 1024);
+        if (size > this.max_file_size) {
+          this.addNotification({
+            message: this.ERROR.FILE_SIZE_ERROR,
+            consoleError: this.ERROR.FILE_SIZE_ERROR,
+          });
+          return;
+        }
+        this.file = droppedFiles[0];
+        this.parseFile();
+      } catch (error) {
         this.addNotification({
           message: this.ERROR.DRAG_MULPLE_FILE_ERROR,
-          consoleError: this.ERROR.DRAG_MULPLE_FILE_ERROR,
+          consoleError: `${this.ERROR.DRAG_MULPLE_FILE_ERROR} ${error}`,
         });
         return;
       }
-      if (droppedFiles[0]['type'] != 'application/json') {
-        this.addNotification({
-          message: this.ERROR.FILE_FORMAT_ERROR,
-          consoleError: this.ERROR.FILE_FORMAT_ERROR,
-        });
-        return;
-      }
-      let size = droppedFiles[0].size / (1024 * 1024);
-      if (size > this.max_file_size) {
-        this.addNotification({
-          message: this.ERROR.FILE_SIZE_ERROR,
-          consoleError: this.ERROR.FILE_SIZE_ERROR,
-        });
-        return;
-      }
-      this.file = droppedFiles[0];
-      this.parseFile();
     },
     handleFile() {
       if (this.file == undefined) {
-        this.$refs.file.click();
+        this.$refs.file.$refs.input.click();
       }
     },
     removeFile(file) {
@@ -240,13 +258,10 @@ export default {
     parseFile() {
       try {
         let reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = (e) => {
           this.Json = JSON.parse(e.target.result);
-        }.bind(this);
-
-        reader.onloadend = () => {
-          this.preValidateSubmission();
         };
+        reader.onloadend = this.preValidateSubmission;
         reader.readAsText(this.file);
       } catch (e) {
         this.resetUpload();
@@ -256,7 +271,7 @@ export default {
         });
       }
     },
-    preValidateSubmission() {
+    async preValidateSubmission() {
       try {
         if (!Array.isArray(this.Json)) {
           this.resetUpload();
@@ -278,7 +293,21 @@ export default {
         this.index = 0;
         this.max = 100;
         this.progress = true;
-        this.validate(this.Json[this.index], []);
+        this.$emit('toggleBlock', true);
+        this.vForm = await Formio.createForm(
+          document.getElementById('validateForm'),
+          this.formSchema,
+          {
+            highlightErrors: true,
+            alwaysDirty: true,
+            hide: {
+              submit: true,
+            },
+          }
+        );
+        this.$nextTick(() => {
+          this.validate(this.Json[this.index], []);
+        });
       } catch (error) {
         this.resetUpload();
         this.$emit('set-error', {
@@ -292,40 +321,60 @@ export default {
         return;
       }
     },
-    validate(element, errors) {
-      const timer = setTimeout(
-        function () {
-          try {
-            let newForm = this.formElement;
-            newForm.data = element;
-            newForm.submission.data = element;
-            newForm.triggerChange();
-            let validationResult = newForm.checkValidity();
-            if (!validationResult) {
-              errors.push({
-                submission: this.index,
-                errors: validationResult.errors,
-              });
-            }
-          } catch (error) {
-            errors.push({
+    async validate(element, errors) {
+      try {
+        this.formIOValidation(element)
+          .then(() => {
+            this.validationDispatcher(errors);
+          })
+          .catch((err) => {
+            errors[this.index] = {
               submission: this.index,
-              message: this.ERROR.ERROR_WHILE_CHECKVALIDITY,
-            });
-          }
-          this.index++;
-          this.value = this.pourcentage(this.index);
-          clearTimeout(timer);
-          if (this.index < this.Json.length) {
-            this.validate(this.Json[this.index], errors);
-          } else {
-            this.endValidation(errors);
-          }
-        }.bind(this),
-        12
-      );
+              errors: err,
+            };
+            this.validationDispatcher(errors);
+          });
+      } catch (error) {
+        errors[this.index] = {
+          submission: this.index,
+          message: this.ERROR.ERROR_WHILE_CHECKVALIDITY,
+        };
+      }
     },
-    pourcentage(i) {
+    async validationDispatcher(errors) {
+      this.index++;
+      this.value = this.percentage(this.index);
+
+      const shouldContinueValidation = this.index < this.Json.length;
+
+      if (shouldContinueValidation) {
+        //await this.delay(10);
+        this.$nextTick(() => {
+          this.validate(this.Json[this.index], errors);
+        });
+      } else {
+        // await this.delay(10);
+        this.endValidation(errors);
+      }
+    },
+    formIOValidation(element) {
+      return new Promise((resolve, reject) => {
+        this.vForm.setSubmission({
+          data: element,
+        });
+        try {
+          this.vForm.submit();
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    },
+    delay(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    },
+
+    percentage(i) {
       let number_of_submission = this.Json.length;
       if (number_of_submission > 0) {
         return Math.ceil((i * this.max) / number_of_submission);
@@ -338,11 +387,18 @@ export default {
       if (this.globalError.length == 0) {
         this.$emit('save-bulk-data', this.Json);
       } else {
+        this.$emit('toggleBlock', false);
         this.$emit('set-error', {
           message: this.ERROR.ERROR_AFTER_VALIDATE,
           error: true,
           upload_state: 10,
-          response: this.globalError,
+          response: {
+            data: {
+              title: 'Validation Error',
+              reports: this.globalError,
+            },
+          },
+          typeError: 0,
         });
       }
     },
@@ -353,7 +409,7 @@ export default {
       this.value = 0;
       this.upload_state = 0;
       this.error = false;
-      this.report = ['test'];
+      this.report = [];
       this.index = 0;
       this.globalError = [];
       this.progress = false;
@@ -364,6 +420,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.displayNone,
+.formio-error-wrapper {
+  display: none !important;
+  height: 1px;
+  width: 1px;
+}
 .loading {
   background-color: #5072a6;
   border-color: #003366;
@@ -437,7 +499,6 @@ export default {
         margin-top: -4%;
         margin-bottom: 3%;
       }
-      //border: 1px solid #003366;
       .success-text {
         color: #38598a;
       }
