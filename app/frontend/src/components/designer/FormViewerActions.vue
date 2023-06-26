@@ -2,12 +2,12 @@
   <v-row class="d-print-none">
     <v-col v-if="formId">
       <v-btn outlined @click="goToAllSubmissionOrDraft">
-        <span>view all submission</span>
+        <span>{{ $t('trans.formViewerActions.viewAllSubmissions') }}</span>
       </v-btn>
     </v-col>
     <v-col class="text-right">
       <!-- Bulk button -->
-      <span v-if="allowSubmitterToUploadFile" class="ml-2">
+      <span v-if="allowSubmitterToUploadFile && !block" class="ml-2">
         <v-tooltip bottom>
           <template #activator="{ on, attrs }">
             <v-btn
@@ -22,10 +22,14 @@
           </template>
           <span>{{
             bulkFile
-              ? 'Switch to sigle submission'
-              : 'Switch to multiple submission'
+              ? $t('trans.formViewerActions.switchSingleSubmssn')
+              : $t('trans.formViewerActions.switchMultiSubmssn')
           }}</span>
         </v-tooltip>
+      </span>
+
+      <span v-if="draftEnabled" class="ml-2">
+        <PrintOptions :submission="submission" />
       </span>
 
       <!-- Save a draft -->
@@ -42,7 +46,7 @@
               <v-icon>save</v-icon>
             </v-btn>
           </template>
-          <span>Save as a Draft</span>
+          <span>{{ $t('trans.formViewerActions.saveAsADraft') }}</span>
         </v-tooltip>
       </span>
 
@@ -62,7 +66,7 @@
                 <v-icon>mode_edit</v-icon>
               </v-btn>
             </template>
-            <span>Edit this Draft</span>
+            <span>{{ $t('trans.formViewerActions.editThisDraft') }}</span>
           </v-tooltip>
         </router-link>
       </span>
@@ -80,13 +84,19 @@
 <script>
 import { FormPermissions } from '@/utils/constants';
 import ManageSubmissionUsers from '@/components/forms/submission/ManageSubmissionUsers.vue';
+import PrintOptions from '@/components/forms/PrintOptions.vue';
 
 export default {
   name: 'MySubmissionsActions',
   components: {
     ManageSubmissionUsers,
+    PrintOptions,
   },
   props: {
+    block: {
+      type: Boolean,
+      default: false,
+    },
     bulkFile: {
       type: Boolean,
       default: false,
@@ -116,6 +126,10 @@ export default {
     },
     submissionId: {
       type: String,
+      default: undefined,
+    },
+    submission: {
+      type: Object,
       default: undefined,
     },
   },

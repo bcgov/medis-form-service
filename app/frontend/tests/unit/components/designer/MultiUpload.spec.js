@@ -1,6 +1,7 @@
 import { shallowMount, createLocalVue } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
+import i18n from '@/internationalization';
 
 import FormViewerMultiUpload from '@/components/designer/FormViewerMultiUpload.vue';
 
@@ -96,6 +97,7 @@ describe('FormViewerMultiUpload.vue', () => {
   it('renders', () => {
     const wrapper = shallowMount(FormViewerMultiUpload, {
       localVue,
+      i18n,
       propsData: {
         formElement: undefined,
         form: {},
@@ -128,6 +130,7 @@ describe('FormViewerMultiUpload.vue', () => {
         localVue,
         propsData: props,
         store,
+        i18n,
         methods: methods,
         stubs: stubs,
       });
@@ -144,12 +147,13 @@ describe('FormViewerMultiUpload.vue', () => {
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
-      wrapper.vm.addFile({ target: { files: undefined } }, 1);
+      wrapper.vm.addFile(null, 1);
       // assert
-      expect(notifactionActions.addNotification).not.toHaveBeenCalled();
+      expect(notifactionActions.addNotification).toHaveBeenCalled();
     });
 
     it('should return undefined when no file drag', () => {
@@ -158,6 +162,7 @@ describe('FormViewerMultiUpload.vue', () => {
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
@@ -172,6 +177,7 @@ describe('FormViewerMultiUpload.vue', () => {
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       const file = new File(['{}'], 'test.json', { type: 'application/json' });
@@ -190,6 +196,7 @@ describe('FormViewerMultiUpload.vue', () => {
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
@@ -202,29 +209,13 @@ describe('FormViewerMultiUpload.vue', () => {
       expect(notifactionActions.addNotification).toHaveBeenCalledWith(expect.anything(), notificationData);
     });
 
-    it('should show notification when the submitter select multiples files', () => {
-      const wrapper = shallowMount(FormViewerMultiUpload, {
-        localVue,
-        propsData: props,
-        methods: methods,
-        store,
-        stubs: stubs,
-      });
-      // act
-      const file = new File(['{}'], 'test.json', { type: 'application/json' });
-      wrapper.vm.addFile({ target: { files: [file, file] } }, 1);
-      // assert
-      notificationData.message = ERROR.DRAG_MULPLE_FILE_ERROR;
-      notificationData.consoleError = ERROR.DRAG_MULPLE_FILE_ERROR;
-      expect(notifactionActions.addNotification).toHaveBeenCalledWith(expect.anything(), notificationData);
-    });
-
     it('should show notification when file format is not JSON', () => {
       const wrapper = shallowMount(FormViewerMultiUpload, {
         localVue,
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
@@ -242,13 +233,14 @@ describe('FormViewerMultiUpload.vue', () => {
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
       wrapper.setData({ max_file_size: 100 / (1024 * 1024) });
       // generate a file 1 mb
       const file = new File([JSON.stringify(fileData(1000))], 'test.json', { type: 'application/json' });
-      wrapper.vm.addFile({ target: { files: [file] } }, 1);
+      wrapper.vm.addFile(file, 1);
       // assert
       notificationData.message = ERROR.FILE_SIZE_ERROR;
       notificationData.consoleError = ERROR.FILE_SIZE_ERROR;
@@ -261,12 +253,13 @@ describe('FormViewerMultiUpload.vue', () => {
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
       // generate a file 5 mb
       const file = new File(['{}'], 'test.json', { type: 'application/json' });
-      wrapper.vm.addFile({ target: { files: [file] } }, 1);
+      wrapper.vm.addFile(file, 1);
       expect(notifactionActions.addNotification).not.toHaveBeenCalled();
       expect(methods.parseFile).toHaveBeenCalled();
     });
@@ -282,6 +275,7 @@ describe('FormViewerMultiUpload.vue', () => {
         },
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
@@ -298,6 +292,7 @@ describe('FormViewerMultiUpload.vue', () => {
         propsData: props,
         methods: methods,
         store,
+        i18n,
         stubs: stubs,
       });
       // act
