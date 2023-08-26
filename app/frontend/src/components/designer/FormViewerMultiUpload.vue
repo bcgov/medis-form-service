@@ -282,7 +282,7 @@ export default {
       try {
         let reader = new FileReader();
         reader.onload = (e) => {
-          this.Json = JSON.parse(e.target.result);
+          this.Json = this.popFormLevelInfo(JSON.parse(e.target.result));
         };
         reader.onloadend = this.preValidateSubmission;
         reader.readAsText(this.file);
@@ -294,6 +294,24 @@ export default {
         });
       }
     },
+    popFormLevelInfo(jsonPayload = []) {
+      /** This function is purely made to remove un-necessery information
+       * from the json payload. It will also help to remove crucial data
+       * to be removed from the payload that should not be going to DB.
+       * Example: Sometime end user use the export json file as a bulk
+       * upload payload that contains formId, confirmationId and User
+       * details as well so we need to remove those details from the payload.
+       *
+       * This will remove the form object from the payload.
+       */
+      if (jsonPayload.length) {
+        jsonPayload.forEach(function (submission) {
+          delete submission.form;
+        });
+      }
+      return jsonPayload;
+    },
+
     async preValidateSubmission() {
       try {
         if (!Array.isArray(this.Json)) {
