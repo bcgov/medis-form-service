@@ -249,7 +249,7 @@ const service = {
       .modify('filterCreatedBy', params.createdBy)
       .modify('filterFormVersionId', params.formVersionId)
       .modify('filterVersion', params.version)
-      .modify('orderDefault');
+      .modify('orderDefault', params.sortBy && params.page ? true : false, params);
     if (params.createdAt && Array.isArray(params.createdAt) && params.createdAt.length == 2) {
       query.modify('filterCreatedAt', params.createdAt[0], params.createdAt[1]);
     }
@@ -257,11 +257,20 @@ const service = {
 
     if (params.fields && params.fields.length) {
       let fields = [];
+      if (typeof params.fields !== 'string' && params.fields.includes('updatedAt')) {
+        selection.push('updatedAt');
+      }
+      if (typeof params.fields !== 'string' && params.fields.includes('updatedBy')) {
+        selection.push('updatedBy');
+      }
       if (Array.isArray(params.fields)) {
         fields = params.fields.flatMap((f) => f.split(',').map((s) => s.trim()));
       } else {
         fields = params.fields.split(',').map((s) => s.trim());
       }
+      // remove updatedAt and updatedBy from custom selected field so they won't be pulled from submission columns
+      fields = fields.filter((f) => f !== 'updatedAt' && f !== 'updatedBy');
+
       fields.push('lateEntry');
       query.select(
         selection,
@@ -273,7 +282,28 @@ const service = {
         ['lateEntry'].map((f) => ref(`submission:data.${f}`).as(f.split('.').slice(-1)))
       );
     }
+
+    if (params.page) {
+      return await service.processPaginationData(
+        query,
+        params.page,
+        params.itemsPerPage,
+        params.filterformSubmissionStatusCode,
+        params.totalSubmissions,
+        params.sortBy,
+        params.sortDesc
+      );
+    }
     return query;
+  },
+
+  async processPaginationData(query, page, itemsPerPage, filterformSubmissionStatusCode, totalSubmissions) {
+    await query.modify('filterformSubmissionStatusCode', filterformSubmissionStatusCode);
+    if (itemsPerPage && parseInt(itemsPerPage) === -1) {
+      return await query.page(parseInt(page), parseInt(totalSubmissions || 0));
+    } else if (itemsPerPage && parseInt(page) >= 0) {
+      return await query.page(parseInt(page), parseInt(itemsPerPage));
+    }
   },
 
   publishVersion: async (formId, formVersionId, params = {}, currentUser) => {
@@ -318,9 +348,13 @@ const service = {
       const fields = [];
       if (!obj.hidden) {
         // Only add key if it is an input and visible
-        if (obj.input) fields.push(obj.key);
-        // Recursively check all children attributes that are arrays
-        else {
+        if (obj.input) {
+          fields.push(obj.key);
+        } else if (Array.isArray(obj) && obj.length) {
+          // Handle table layouts, where it's an array without keys.
+          fields.push(obj.flatMap((o) => findFields(o)));
+        } else {
+          // Recursively check all children attributes that are arrays
           Object.keys(obj).forEach((key) => {
             if (Array.isArray(obj[key]) && obj[key].length) {
               fields.push(obj[key].flatMap((o) => findFields(o)));
